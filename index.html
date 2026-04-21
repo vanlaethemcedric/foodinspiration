@@ -15,15 +15,18 @@
   *{margin:0;padding:0;box-sizing:border-box}
   body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);min-height:100vh;overflow-x:hidden}
 
-  header{background:var(--charcoal);padding:20px 40px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+  header{background:var(--charcoal);padding:20px 40px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;flex-wrap:wrap;gap:12px}
   .logo{font-family:'Playfair Display',serif;font-size:22px;color:var(--cream);letter-spacing:.02em}
   .logo span{font-style:italic;color:var(--gold)}
-  .header-right{display:flex;align-items:center;gap:16px}
+  .header-right{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
   .view-toggle{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:8px;padding:4px}
   .view-btn{background:none;border:none;color:rgba(255,255,255,.5);padding:8px 14px;border-radius:6px;cursor:pointer;font-size:13px;font-family:'DM Sans',sans-serif;font-weight:500;transition:all .2s}
   .view-btn.active{background:var(--cream);color:var(--charcoal)}
-  .storage-badge{font-size:10px;font-family:'DM Sans',sans-serif;color:rgba(255,255,255,.35);display:flex;align-items:center;gap:5px;}
-  .storage-dot{width:6px;height:6px;border-radius:50%;background:#4ade80;}
+  .sync-badge{font-size:10px;font-family:'DM Sans',sans-serif;color:rgba(255,255,255,.4);display:flex;align-items:center;gap:5px}
+  .sync-dot{width:7px;height:7px;border-radius:50%;background:#4ade80;transition:background .3s}
+  .sync-dot.syncing{background:#f59e0b;animation:pulse 1s infinite}
+  .sync-dot.error{background:#ef4444}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
   .filters-bar{background:var(--warm-white);border-bottom:1px solid var(--border);padding:14px 40px;display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap}
   .filter-col{display:flex;flex-direction:column;gap:6px}
@@ -80,7 +83,7 @@
   .list-card-desc{font-size:12px;color:var(--muted);line-height:1.5;margin-top:6px}
   .delete-btn{position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:50%;background:rgba(200,68,42,.85);color:white;border:none;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s;z-index:5}
   .list-card:hover .delete-btn{opacity:1}
-  .custom-badge{position:absolute;top:10px;left:10px;background:var(--charcoal);color:var(--gold);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:3px 8px;border-radius:4px;}
+  .custom-badge{position:absolute;top:10px;left:10px;background:var(--charcoal);color:var(--gold);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:3px 8px;border-radius:4px}
 
   .modal-overlay{display:none;position:fixed;inset:0;background:rgba(28,28,26,.7);z-index:200;align-items:center;justify-content:center;padding:24px}
   .modal-overlay.open{display:flex}
@@ -103,11 +106,22 @@
   .ingredient-item{display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--cream);border-radius:8px;font-size:14px}
   .ingredient-amount{font-weight:500;color:var(--charcoal);min-width:80px}
   .ingredient-name{color:var(--ink)}
-
   .steps-list{display:flex;flex-direction:column;gap:16px}
   .step-item{display:flex;gap:16px;align-items:flex-start}
   .step-number{width:32px;height:32px;border-radius:50%;background:var(--charcoal);color:white;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:500;flex-shrink:0;margin-top:2px}
   .step-text{font-size:14px;line-height:1.7;color:var(--ink);padding-top:4px}
+
+  /* Photo upload */
+  .photo-upload-area{border:2px dashed var(--border);border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+  .photo-upload-area:hover{border-color:var(--charcoal);background:rgba(28,28,26,.03)}
+  .photo-upload-area.has-preview{border-style:solid;border-color:var(--green);padding:0}
+  .photo-preview{width:100%;height:180px;object-fit:cover;border-radius:8px;display:block}
+  .photo-upload-label{font-size:13px;color:var(--muted);margin-top:8px;display:block}
+  .photo-upload-icon{font-size:32px;margin-bottom:6px}
+  .photo-input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+  .photo-remove{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.6);color:white;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center}
+  .upload-progress{height:3px;background:var(--green-light);border-radius:2px;margin-top:6px;overflow:hidden;display:none}
+  .upload-progress-bar{height:100%;background:var(--green);width:0%;transition:width .3s}
 
   .add-btn{position:fixed;bottom:32px;right:32px;width:56px;height:56px;border-radius:50%;background:var(--charcoal);color:white;border:none;font-size:24px;cursor:pointer;box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;transition:all .2s;z-index:150}
   .add-btn:hover{transform:scale(1.1) rotate(90deg);background:var(--accent)}
@@ -120,8 +134,9 @@
   .form-tag.sel-origin{background:var(--charcoal);color:white;border-color:var(--charcoal)}
   .form-tag.sel-type{background:var(--green);color:white;border-color:var(--green)}
   .form-tag.sel-duration{background:var(--gold);color:white;border-color:var(--gold)}
-  .submit-btn{width:100%;padding:14px;background:var(--charcoal);color:white;border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;margin-top:8px;transition:background .2s}
+  .submit-btn{width:100%;padding:14px;background:var(--charcoal);color:white;border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;margin-top:8px;transition:background .2s;display:flex;align-items:center;justify-content:center;gap:8px}
   .submit-btn:hover{background:var(--accent)}
+  .submit-btn:disabled{opacity:.5;cursor:not-allowed}
   .ingredient-row{display:flex;gap:8px;margin-bottom:8px}
   .remove-btn{width:36px;height:36px;border-radius:8px;background:var(--accent-light);color:var(--accent);border:none;cursor:pointer;font-size:16px;flex-shrink:0;align-self:center}
   .add-row-btn{font-size:12px;color:var(--green);border:none;background:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:500;padding:4px 0}
@@ -129,8 +144,13 @@
   .step-row{display:flex;gap:8px;margin-bottom:8px;align-items:flex-start}
   .step-num{width:28px;height:28px;border-radius:50%;background:var(--charcoal);color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex-shrink:0;margin-top:7px}
 
-  .toast{position:fixed;bottom:100px;right:32px;background:var(--charcoal);color:white;padding:12px 20px;border-radius:10px;font-size:13px;font-family:'DM Sans',sans-serif;z-index:300;transform:translateY(20px);opacity:0;transition:all .3s;pointer-events:none}
+  .toast{position:fixed;bottom:100px;right:32px;background:var(--charcoal);color:white;padding:12px 20px;border-radius:10px;font-size:13px;font-family:'DM Sans',sans-serif;z-index:300;transform:translateY(20px);opacity:0;transition:all .3s;pointer-events:none;max-width:280px}
   .toast.show{transform:translateY(0);opacity:1}
+
+  .loading-overlay{position:fixed;inset:0;background:rgba(245,240,232,.8);z-index:400;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
+  .loading-spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--charcoal);border-radius:50%;animation:spin 0.8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .loading-text{font-size:14px;color:var(--muted)}
 
   @media(max-width:600px){
     header{padding:16px 20px}
@@ -144,10 +164,18 @@
 </head>
 <body>
 
+<div class="loading-overlay" id="loading-overlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text">Loading recipes…</div>
+</div>
+
 <header>
   <div class="logo">mise <span>en place</span></div>
   <div class="header-right">
-    <div class="storage-badge"><div class="storage-dot"></div> Saved locally</div>
+    <div class="sync-badge">
+      <div class="sync-dot" id="sync-dot"></div>
+      <span id="sync-label">Connecting…</span>
+    </div>
     <div class="view-toggle">
       <button class="view-btn active" id="btn-swipe" onclick="setView('swipe')">⊞ Discover</button>
       <button class="view-btn" id="btn-list" onclick="setView('list')">☰ All Recipes</button>
@@ -212,15 +240,27 @@
         <label class="form-label">Description</label>
         <textarea class="form-input" id="f-desc" rows="2" placeholder="Short description..."></textarea>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <div class="form-group">
-          <label class="form-label">Photo URL (optional)</label>
-          <input class="form-input" id="f-photo" placeholder="https://...">
+
+      <!-- PHOTO UPLOAD -->
+      <div class="form-group">
+        <label class="form-label">📷 Photo <span style="font-weight:400;text-transform:none;letter-spacing:0">(upload or take with camera)</span></label>
+        <div class="photo-upload-area" id="photo-upload-area">
+          <input class="photo-input" type="file" id="f-photo-file" accept="image/*" capture="environment" onchange="handlePhotoSelect(this)">
+          <div id="photo-placeholder">
+            <div class="photo-upload-icon">📸</div>
+            <span class="photo-upload-label">Click to upload · On mobile: use camera or gallery</span>
+          </div>
+          <img class="photo-preview" id="photo-preview" style="display:none" alt="Preview">
+          <button class="photo-remove" id="photo-remove" style="display:none" onclick="removePhoto(event)">✕</button>
         </div>
-        <div class="form-group">
-          <label class="form-label">Emoji (fallback)</label>
-          <input class="form-input" id="f-emoji" placeholder="🍝" maxlength="4">
+        <div class="upload-progress" id="upload-progress">
+          <div class="upload-progress-bar" id="upload-progress-bar"></div>
         </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Emoji (shown when no photo)</label>
+        <input class="form-input" id="f-emoji" placeholder="🍝" maxlength="4" style="max-width:120px">
       </div>
       <div class="form-group">
         <label class="form-label">Origin</label>
@@ -244,7 +284,9 @@
         <div id="steps-rows"></div>
         <button class="add-row-btn" onclick="addStepRow()">+ Add step</button>
       </div>
-      <button class="submit-btn" onclick="addRecipe()">Add Recipe</button>
+      <button class="submit-btn" id="submit-btn" onclick="addRecipe()">
+        <span id="submit-label">Add Recipe</span>
+      </button>
     </div>
   </div>
 </div>
@@ -252,104 +294,235 @@
 <button class="add-btn" onclick="document.getElementById('add-modal').classList.add('open')" title="Add recipe">+</button>
 <div class="toast" id="toast"></div>
 
-<script>
-const STORAGE_KEY = 'mise_en_place_recipes';
+<!-- Firebase SDKs -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+// Cloudinary is used for photo storage (no Firebase Storage needed)
 
-const ORIGINS=['Italian','Belgian','French','Asian','American BBQ','Mexican','Japanese','Greek','Spanish','Middle Eastern'];
-const TYPES=['Breakfast','Lunch','Dinner','Dessert','Snack','Starter','Brunch'];
-const DURATIONS=['Quick','Medium','Long'];
+// ── FIREBASE CONFIG ──
+const firebaseConfig = {
+  apiKey: "AIzaSyBBCXe8v-9Cw_Rozkb9ZFSb4A4gyZeDiAI",
+  authDomain: "foodinspiration-swipe.firebaseapp.com",
+  projectId: "foodinspiration-swipe",
+  storageBucket: "foodinspiration-swipe.firebasestorage.app",
+  messagingSenderId: "1018741004754",
+  appId: "1:1018741004754:web:73f1432cbebbabb63c100b",
+  measurementId: "G-BZG34VS2PV"
+};
 
-// ── DEFAULT RECIPES (built-in, never persisted — only custom ones are saved) ──
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+// Photo uploads handled via Cloudinary
+
+// ── CONSTANTS ──
+const ORIGINS  = ['Italian','Belgian','French','Asian','American BBQ','Mexican','Japanese','Greek','Spanish','Middle Eastern'];
+const TYPES    = ['Breakfast','Lunch','Dinner','Dessert','Snack','Starter','Brunch'];
+const DURATIONS= ['Quick','Medium','Long'];
+
 const DEFAULT_RECIPES = [
-  {id:1,name:'Spaghetti Carbonara',origin:'Italian',type:'Dinner',duration:'Medium',emoji:'🍝',photo:'',
+  {id:'default-1',name:'Spaghetti Carbonara',origin:'Italian',type:'Dinner',duration:'Medium',emoji:'🍝',photo:'',
    desc:'Creamy pasta with pancetta, egg yolk and pecorino. A Roman classic ready in 30 minutes.',
-   ingredients:[{amount:'400g',name:'Spaghetti'},{amount:'150g',name:'Pancetta or guanciale'},{amount:'4',name:'Egg yolks'},{amount:'80g',name:'Pecorino Romano, grated'},{amount:'1 tsp',name:'Black pepper'},{amount:'to taste',name:'Salt'}],
-   steps:['Bring salted water to boil, cook spaghetti al dente.','Fry pancetta in a pan until crispy. Remove from heat.','Whisk egg yolks with pecorino and black pepper.','Reserve 1 cup pasta water before draining.','Add hot spaghetti to pancetta pan off the heat. Pour egg mixture over.','Toss with pasta water gradually to make a creamy sauce. Serve immediately.']},
-  {id:2,name:'Moules-Frites',origin:'Belgian',type:'Dinner',duration:'Quick',emoji:'🦪',photo:'',
+   ingredients:[{amount:'400g',name:'Spaghetti'},{amount:'150g',name:'Pancetta or guanciale'},{amount:'4',name:'Egg yolks'},{amount:'80g',name:'Pecorino Romano, grated'},{amount:'1 tsp',name:'Black pepper'}],
+   steps:['Bring salted water to boil, cook spaghetti al dente.','Fry pancetta until crispy.','Whisk egg yolks with pecorino and pepper.','Reserve 1 cup pasta water, drain pasta.','Toss pasta with pancetta off heat, add egg mixture.','Add pasta water gradually for a creamy sauce.']},
+  {id:'default-2',name:'Moules-Frites',origin:'Belgian',type:'Dinner',duration:'Quick',emoji:'🦪',photo:'',
    desc:'Fresh mussels steamed in white wine with crispy golden fries. The ultimate Belgian comfort food.',
-   ingredients:[{amount:'1.5kg',name:'Fresh mussels, cleaned'},{amount:'200ml',name:'Dry white wine'},{amount:'2',name:'Shallots, sliced'},{amount:'3 cloves',name:'Garlic'},{amount:'30g',name:'Butter'},{amount:'handful',name:'Fresh parsley'},{amount:'4 large',name:'Floury potatoes'}],
-   steps:['Scrub and debeard mussels, discard any open ones.','Sweat shallots and garlic in butter for 3 minutes.','Pour in white wine and bring to boil.','Add mussels, cover and steam 4–5 minutes.','Fry potatoes twice: 150°C until soft, then 190°C until golden.','Discard unopened mussels. Scatter parsley, serve with fries.']},
-  {id:3,name:'Pad Thai',origin:'Asian',type:'Dinner',duration:'Quick',emoji:'🍜',photo:'',
-   desc:'Stir-fried rice noodles with shrimp, tofu, peanuts and lime. Street food at its finest.',
-   ingredients:[{amount:'200g',name:'Flat rice noodles'},{amount:'200g',name:'Raw shrimp, peeled'},{amount:'100g',name:'Firm tofu, cubed'},{amount:'3 tbsp',name:'Fish sauce'},{amount:'2 tbsp',name:'Tamarind paste'},{amount:'1 tbsp',name:'Palm sugar'},{amount:'2',name:'Eggs'},{amount:'80g',name:'Bean sprouts'},{amount:'50g',name:'Roasted peanuts, crushed'},{amount:'1',name:'Lime'}],
-   steps:['Soak rice noodles in cold water 30 min, drain.','Mix fish sauce, tamarind and sugar into sauce.','Stir-fry tofu in hot wok until golden.','Add shrimp, cook 2 min. Add noodles and sauce, toss.','Push to side, scramble eggs in centre, mix together.','Add bean sprouts and spring onions. Serve with peanuts and lime.']},
-  {id:4,name:'Croque Monsieur',origin:'French',type:'Lunch',duration:'Quick',emoji:'🥪',photo:'',
-   desc:'Toasted ham and cheese sandwich with béchamel sauce, gratinated to golden perfection.',
-   ingredients:[{amount:'4 slices',name:'Thick white bread'},{amount:'4 slices',name:'Cooked ham'},{amount:'100g',name:'Gruyère, grated'},{amount:'20g',name:'Butter'},{amount:'1 tbsp',name:'Plain flour'},{amount:'200ml',name:'Whole milk'},{amount:'pinch',name:'Nutmeg'}],
-   steps:['Make béchamel: melt butter, whisk in flour, add milk gradually. Season with nutmeg.','Toast bread slices under the grill.','Spread béchamel on each slice.','Layer ham and half the cheese on two slices. Top with remaining bread.','Spread remaining béchamel on top and scatter cheese.','Grill until golden and bubbling, about 3–4 minutes.']},
-  {id:5,name:'Smash Burgers',origin:'American BBQ',type:'Dinner',duration:'Quick',emoji:'🍔',photo:'',
-   desc:'Thin crispy-edged beef patties with pickles, American cheese and special sauce.',
-   ingredients:[{amount:'500g',name:'Ground beef (80/20)'},{amount:'4',name:'Brioche buns'},{amount:'4 slices',name:'American cheese'},{amount:'8',name:'Dill pickle slices'},{amount:'1',name:'White onion, thinly sliced'},{amount:'4 tbsp',name:'Mayonnaise'},{amount:'2 tbsp',name:'Ketchup'},{amount:'1 tbsp',name:'Mustard'}],
-   steps:['Mix mayo, ketchup and mustard for the sauce.','Divide beef into 4 loose balls, season with salt.','Heat cast iron skillet until smoking.','Smash beef ball flat, hold 10 seconds.','Cook 1.5 min until crispy. Flip, add cheese, cook 1 min.','Toast buns. Assemble with sauce, pickles, onion and patty.']},
-  {id:6,name:'Tiramisu',origin:'Italian',type:'Dessert',duration:'Medium',emoji:'🍮',photo:'',
-   desc:'Layers of espresso-soaked ladyfingers and mascarpone cream, dusted with cocoa.',
-   ingredients:[{amount:'500g',name:'Mascarpone'},{amount:'4',name:'Eggs, separated'},{amount:'100g',name:'Caster sugar'},{amount:'300ml',name:'Strong espresso, cooled'},{amount:'3 tbsp',name:'Marsala or coffee liqueur'},{amount:'200g',name:'Savoiardi ladyfingers'},{amount:'to dust',name:'Cocoa powder'}],
-   steps:['Whisk yolks and sugar until pale. Beat in mascarpone.','Whisk egg whites to stiff peaks.','Fold whites into mascarpone in three additions.','Mix espresso and marsala in a shallow dish.','Dip ladyfingers and lay in dish. Spread half the cream.','Repeat layers. Chill at least 4 hours. Dust with cocoa before serving.']},
-  {id:7,name:'Ramen',origin:'Japanese',type:'Dinner',duration:'Long',emoji:'🍥',photo:'',
-   desc:'Rich tonkotsu broth with chashu pork, soft-boiled egg, nori and bamboo shoots.',
-   ingredients:[{amount:'1kg',name:'Pork bones'},{amount:'400g',name:'Pork belly for chashu'},{amount:'4 portions',name:'Fresh ramen noodles'},{amount:'4',name:'Soft-boiled eggs'},{amount:'4 sheets',name:'Nori'},{amount:'100g',name:'Bamboo shoots'},{amount:'4 tbsp',name:'Soy sauce'},{amount:'2 tbsp',name:'Mirin'}],
-   steps:['Blanch bones in boiling water 5 min. Drain and rinse.','Simmer bones 6–8 hours until broth is milky. Season.','Braise rolled pork belly in soy, mirin, water 2 hours.','Marinate boiled eggs in diluted soy sauce 2+ hours.','Cook noodles according to package.','Ladle broth over noodles. Top with chashu, egg, nori and bamboo.']},
-  {id:8,name:'Waterzooi',origin:'Belgian',type:'Dinner',duration:'Long',emoji:'🥘',photo:'',
+   ingredients:[{amount:'1.5kg',name:'Fresh mussels'},{amount:'200ml',name:'Dry white wine'},{amount:'2',name:'Shallots'},{amount:'3 cloves',name:'Garlic'},{amount:'30g',name:'Butter'},{amount:'4 large',name:'Floury potatoes'}],
+   steps:['Clean mussels, discard open ones.','Sweat shallots and garlic in butter.','Add wine, bring to boil.','Add mussels, cover, steam 4–5 min.','Double-fry potatoes: 150°C then 190°C.','Discard unopened mussels, serve with fries.']},
+  {id:'default-3',name:'Pad Thai',origin:'Asian',type:'Dinner',duration:'Quick',emoji:'🍜',photo:'',
+   desc:'Stir-fried rice noodles with shrimp, tofu, peanuts and lime.',
+   ingredients:[{amount:'200g',name:'Flat rice noodles'},{amount:'200g',name:'Raw shrimp'},{amount:'3 tbsp',name:'Fish sauce'},{amount:'2 tbsp',name:'Tamarind paste'},{amount:'2',name:'Eggs'},{amount:'50g',name:'Roasted peanuts'}],
+   steps:['Soak noodles 30 min, drain.','Mix fish sauce, tamarind, sugar.','Stir-fry tofu until golden.','Add shrimp and noodles, toss with sauce.','Scramble eggs into the mix.','Serve with peanuts and lime.']},
+  {id:'default-4',name:'Waterzooi',origin:'Belgian',type:'Dinner',duration:'Long',emoji:'🥘',photo:'',
    desc:'Traditional Ghent stew with chicken in a creamy vegetable broth.',
-   ingredients:[{amount:'1 whole',name:'Chicken, cut in pieces'},{amount:'3',name:'Carrots, sliced'},{amount:'3 stalks',name:'Celery'},{amount:'2',name:'Leeks, sliced'},{amount:'1',name:'Onion'},{amount:'1L',name:'Chicken stock'},{amount:'200ml',name:'Heavy cream'},{amount:'3',name:'Egg yolks'}],
-   steps:['Brown chicken pieces in butter. Remove and set aside.','Sweat onion, leek, carrot and celery 5 minutes.','Return chicken, add stock and herbs. Simmer 45 minutes.','Remove chicken, shred meat, return to pot.','Whisk egg yolks and cream, stir into stew off the heat.','Season with salt, pepper and lemon. Serve with crusty bread.']},
+   ingredients:[{amount:'1 whole',name:'Chicken, cut in pieces'},{amount:'3',name:'Carrots'},{amount:'2',name:'Leeks'},{amount:'1L',name:'Chicken stock'},{amount:'200ml',name:'Heavy cream'},{amount:'3',name:'Egg yolks'}],
+   steps:['Brown chicken in butter.','Sweat vegetables 5 minutes.','Add stock, simmer 45 min.','Shred chicken, return to pot.','Stir in cream and egg yolks off heat.','Season, serve with crusty bread.']},
+  {id:'default-5',name:'Tiramisu',origin:'Italian',type:'Dessert',duration:'Medium',emoji:'🍮',photo:'',
+   desc:'Layers of espresso-soaked ladyfingers and mascarpone cream, dusted with cocoa.',
+   ingredients:[{amount:'500g',name:'Mascarpone'},{amount:'4',name:'Eggs, separated'},{amount:'100g',name:'Caster sugar'},{amount:'300ml',name:'Espresso, cooled'},{amount:'200g',name:'Savoiardi'},{amount:'to dust',name:'Cocoa powder'}],
+   steps:['Whisk yolks and sugar until pale, beat in mascarpone.','Whisk egg whites to stiff peaks.','Fold whites into mascarpone.','Dip ladyfingers in espresso, layer in dish.','Spread cream, repeat layers.','Chill 4 hours, dust with cocoa.']},
 ];
 
 // ── STATE ──
-let recipes = [];
-let nextId = 100; // custom recipes start at 100 to avoid collisions with defaults
-let activeFilters = {origin:[],type:[],duration:[]};
-let currentView = 'swipe';
-let swipeIndex = 0;
+let customRecipes = [];   // from Firestore
+let activeFilters  = {origin:[],type:[],duration:[]};
+let currentView    = 'swipe';
+let swipeIndex     = 0;
 let formSelections = {origin:null,type:null,duration:null};
-let startX = 0, isDragging = false;
+let startX=0, isDragging=false;
+let selectedPhotoFile = null;
+let pendingPhotoURL   = null;
 
-// ── LOCALSTORAGE ──
-function saveCustomRecipes() {
-  const custom = recipes.filter(r => r.custom);
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(custom));
-  } catch(e) {
-    showToast('⚠️ Could not save — storage full?');
-  }
+function allRecipes() {
+  return [...customRecipes, ...DEFAULT_RECIPES];
 }
 
-function loadCustomRecipes() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const saved = JSON.parse(raw);
-    // Update nextId to avoid collisions
-    saved.forEach(r => { if (r.id >= nextId) nextId = r.id + 1; });
-    return saved;
-  } catch(e) {
-    return [];
-  }
+// ── SYNC STATUS ──
+function setSyncStatus(status) {
+  const dot   = document.getElementById('sync-dot');
+  const label = document.getElementById('sync-label');
+  dot.className = 'sync-dot';
+  if (status === 'ok')       { dot.classList.add(''); label.textContent = 'Synced'; }
+  else if (status === 'syncing') { dot.classList.add('syncing'); label.textContent = 'Syncing…'; }
+  else                        { dot.classList.add('error');   label.textContent = 'Offline'; }
 }
 
-function deleteRecipe(id, e) {
+// ── FIRESTORE REALTIME LISTENER ──
+const q = query(collection(db, 'recipes'), orderBy('createdAt', 'desc'));
+onSnapshot(q,
+  (snapshot) => {
+    customRecipes = snapshot.docs.map(d => ({ ...d.data(), firestoreId: d.id, custom: true }));
+    setSyncStatus('ok');
+    document.getElementById('loading-overlay').style.display = 'none';
+    render();
+  },
+  (err) => {
+    console.error(err);
+    setSyncStatus('error');
+    document.getElementById('loading-overlay').style.display = 'none';
+    showToast('⚠️ Could not load recipes from server');
+    render();
+  }
+);
+
+// ── PHOTO HANDLING ──
+window.handlePhotoSelect = function(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 10 * 1024 * 1024) { showToast('⚠️ Photo must be under 10MB'); return; }
+  selectedPhotoFile = file;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('photo-preview').src = e.target.result;
+    document.getElementById('photo-preview').style.display = 'block';
+    document.getElementById('photo-placeholder').style.display = 'none';
+    document.getElementById('photo-remove').style.display = 'flex';
+    document.getElementById('photo-upload-area').classList.add('has-preview');
+  };
+  reader.readAsDataURL(file);
+};
+
+window.removePhoto = function(e) {
   e.stopPropagation();
-  const r = recipes.find(x => x.id === id);
-  if (!r) return;
-  if (!r.custom) { showToast('Built-in recipes cannot be deleted'); return; }
-  if (!confirm(`Delete "${r.name}"?`)) return;
-  recipes = recipes.filter(x => x.id !== id);
-  saveCustomRecipes();
-  render();
-  showToast('🗑️ Recipe deleted');
+  selectedPhotoFile = null;
+  pendingPhotoURL   = null;
+  document.getElementById('photo-preview').style.display = 'none';
+  document.getElementById('photo-preview').src = '';
+  document.getElementById('photo-placeholder').style.display = 'block';
+  document.getElementById('photo-remove').style.display = 'none';
+  document.getElementById('photo-upload-area').classList.remove('has-preview');
+  document.getElementById('f-photo-file').value = '';
+};
+
+async function uploadPhoto(file) {
+  const CLOUD_NAME    = 'dciqjv8aq';
+  const UPLOAD_PRESET = 'foodsinpiration-preset';
+  const progressEl = document.getElementById('upload-progress');
+  const barEl      = document.getElementById('upload-progress-bar');
+  progressEl.style.display = 'block';
+  barEl.style.width = '0%';
+
+  return new Promise((resolve, reject) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', UPLOAD_PRESET);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`);
+
+    xhr.upload.onprogress = e => {
+      if (e.lengthComputable) barEl.style.width = (e.loaded / e.total * 100) + '%';
+    };
+    xhr.onload = () => {
+      progressEl.style.display = 'none';
+      if (xhr.status === 200) {
+        const res = JSON.parse(xhr.responseText);
+        resolve(res.secure_url);
+      } else {
+        reject(new Error('Cloudinary upload failed: ' + xhr.statusText));
+      }
+    };
+    xhr.onerror = () => { progressEl.style.display = 'none'; reject(new Error('Network error')); };
+    xhr.send(formData);
+  });
 }
 
-// ── TOAST ──
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2500);
-}
+// ── ADD RECIPE ──
+window.addRecipe = async function() {
+  const name = document.getElementById('f-name').value.trim();
+  if (!name) { alert('Please enter a recipe name'); return; }
+
+  const btn   = document.getElementById('submit-btn');
+  const label = document.getElementById('submit-label');
+  btn.disabled = true;
+  label.textContent = '⏳ Saving…';
+
+  try {
+    let photoURL = '';
+    if (selectedPhotoFile) {
+      label.textContent = '📤 Uploading photo…';
+      photoURL = await uploadPhoto(selectedPhotoFile);
+    }
+
+    const ingRows = document.querySelectorAll('#ingredients-rows .ingredient-row');
+    const ingredients = Array.from(ingRows).map(row => {
+      const inputs = row.querySelectorAll('input');
+      return { amount: inputs[0].value.trim(), name: inputs[1].value.trim() };
+    }).filter(i => i.name);
+    const steps = Array.from(document.querySelectorAll('#steps-rows textarea'))
+      .map(t => t.value.trim()).filter(Boolean);
+
+    await addDoc(collection(db, 'recipes'), {
+      name,
+      desc:     document.getElementById('f-desc').value.trim() || 'A delicious recipe.',
+      photo:    photoURL,
+      emoji:    document.getElementById('f-emoji').value.trim() || '🍽️',
+      origin:   formSelections.origin   || 'Other',
+      type:     formSelections.type     || 'Dinner',
+      duration: formSelections.duration || 'Medium',
+      ingredients, steps,
+      createdAt: serverTimestamp()
+    });
+
+    // Reset form
+    ['f-name','f-desc','f-emoji'].forEach(id => document.getElementById(id).value='');
+    removePhoto({ stopPropagation: ()=>{} });
+    document.getElementById('ingredients-rows').innerHTML='';
+    addIngredientRow();
+    document.getElementById('steps-rows').innerHTML='';
+    addStepRow();
+    formSelections = {origin:null,type:null,duration:null};
+    document.getElementById('add-modal').classList.remove('open');
+    buildFormSelects();
+    swipeIndex = 0;
+    showToast('✅ Recipe saved for everyone!');
+
+  } catch(err) {
+    console.error(err);
+    showToast('❌ Save failed: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    label.textContent = 'Add Recipe';
+  }
+};
+
+// ── DELETE RECIPE ──
+window.deleteRecipe = async function(firestoreId, name, photoURL, e) {
+  e.stopPropagation();
+  if (!confirm(`Delete "${name}"?`)) return;
+  try {
+    await deleteDoc(doc(db, 'recipes', firestoreId));
+    // Note: Cloudinary photos are kept (no server-side delete without API secret)
+    showToast('🗑️ Recipe deleted');
+  } catch(err) {
+    showToast('❌ Could not delete: ' + err.message);
+  }
+};
 
 // ── FILTERS ──
 function getFiltered() {
-  return recipes.filter(r => {
+  return allRecipes().filter(r => {
     if (activeFilters.origin.length   && !activeFilters.origin.includes(r.origin))   return false;
     if (activeFilters.type.length     && !activeFilters.type.includes(r.type))       return false;
     if (activeFilters.duration.length && !activeFilters.duration.includes(r.duration)) return false;
@@ -366,63 +539,49 @@ function buildFilters() {
   });
   buildFormSelects();
 }
-
-function toggleFilter(key, val) {
-  const idx = activeFilters[key].indexOf(val);
-  if (idx === -1) activeFilters[key].push(val);
-  else activeFilters[key].splice(idx, 1);
-  swipeIndex = 0;
-  buildFilters();
-  render();
-}
-
-function clearFilters() {
-  activeFilters = {origin:[],type:[],duration:[]};
-  swipeIndex = 0;
-  buildFilters();
-  render();
-}
-
-function buildFormSelects() {
-  ['origin','type','duration'].forEach(key => {
-    const items = key==='origin'?ORIGINS:key==='type'?TYPES:DURATIONS;
-    const el = document.getElementById('f-'+key);
-    if (!el) return;
-    el.innerHTML = items.map(v =>
+window.toggleFilter = function(key,val){
+  const idx=activeFilters[key].indexOf(val);
+  if(idx===-1) activeFilters[key].push(val); else activeFilters[key].splice(idx,1);
+  swipeIndex=0; buildFilters(); render();
+};
+window.clearFilters = function(){
+  activeFilters={origin:[],type:[],duration:[]}; swipeIndex=0; buildFilters(); render();
+};
+function buildFormSelects(){
+  ['origin','type','duration'].forEach(key=>{
+    const items=key==='origin'?ORIGINS:key==='type'?TYPES:DURATIONS;
+    const el=document.getElementById('f-'+key); if(!el) return;
+    el.innerHTML=items.map(v=>
       `<span class="form-tag ${formSelections[key]===v?'sel-'+key:''}" onclick="selectForm('${key}','${v}')">${v}</span>`
     ).join('');
   });
 }
-
-function selectForm(key, val) {
-  formSelections[key] = formSelections[key]===val ? null : val;
-  buildFormSelects();
-}
+window.selectForm=function(key,val){ formSelections[key]=formSelections[key]===val?null:val; buildFormSelects(); };
 
 // ── RENDER ──
-function render() {
-  const filtered = getFiltered();
-  const total = activeFilters.origin.length + activeFilters.type.length + activeFilters.duration.length;
-  document.getElementById('results-count').textContent =
+function render(){
+  const filtered=getFiltered();
+  const total=activeFilters.origin.length+activeFilters.type.length+activeFilters.duration.length;
+  document.getElementById('results-count').textContent=
     `${filtered.length} recipe${filtered.length!==1?'s':''}${total?' (filtered)':''}`;
-  if (currentView === 'swipe') renderSwipe(filtered);
+  if(currentView==='swipe') renderSwipe(filtered);
   else renderList(filtered);
 }
 
-function renderSwipe(filtered) {
-  const stack = document.getElementById('swipe-stack');
-  const visible = filtered.slice(swipeIndex, swipeIndex+3);
-  if (!visible.length) {
-    stack.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;gap:12px;background:white;border-radius:20px;box-shadow:var(--shadow-lg);padding:40px">
+function renderSwipe(filtered){
+  const stack=document.getElementById('swipe-stack');
+  const visible=filtered.slice(swipeIndex,swipeIndex+3);
+  if(!visible.length){
+    stack.innerHTML=`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;gap:12px;background:white;border-radius:20px;box-shadow:var(--shadow-lg);padding:40px">
       <div style="font-size:52px">🍽️</div>
-      <div style="font-family:'Playfair Display',serif;font-size:20px;color:var(--ink)">All recipes browsed!</div>
+      <div style="font-family:'Playfair Display',serif;font-size:20px">All recipes browsed!</div>
       <div style="font-size:13px;color:var(--muted)">Adjust filters or add new recipes</div>
       <button onclick="swipeIndex=0;render()" style="padding:8px 20px;background:var(--charcoal);color:white;border:none;border-radius:20px;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:8px">Start over</button>
     </div>`;
     return;
   }
-  stack.innerHTML = visible.slice().reverse().map((r,i) => `
-    <div class="swipe-card" data-id="${r.id}" ${i===0?`onclick="openModal(${r.id})"`:''}>
+  stack.innerHTML=visible.slice().reverse().map((r,i)=>`
+    <div class="swipe-card" data-id="${r.id||r.firestoreId}" ${i===0?`onclick="openModal('${r.id||r.firestoreId}')"`:''}> 
       ${r.photo?`<img class="card-image" src="${r.photo}" alt="${r.name}">`:`<div class="card-image-placeholder">${r.emoji||'🍽️'}</div>`}
       <div class="card-body">
         <div class="card-tags">
@@ -436,55 +595,52 @@ function renderSwipe(filtered) {
       </div>
     </div>
   `).join('');
-  const topCard = stack.querySelector('.swipe-card:last-child');
-  if (topCard) setupDrag(topCard);
+  const topCard=stack.querySelector('.swipe-card:last-child');
+  if(topCard) setupDrag(topCard);
 }
 
-function setupDrag(card) {
-  card.addEventListener('mousedown', e => { startX=e.clientX; isDragging=true; });
-  document.addEventListener('mousemove', e => {
-    if (!isDragging) return;
-    const dx = e.clientX - startX;
-    card.style.transform = `translateX(${dx}px) rotate(${dx*.05}deg)`;
+function setupDrag(card){
+  card.addEventListener('mousedown',e=>{startX=e.clientX;isDragging=true;});
+  document.addEventListener('mousemove',e=>{
+    if(!isDragging) return;
+    const dx=e.clientX-startX;
+    card.style.transform=`translateX(${dx}px) rotate(${dx*.05}deg)`;
   });
-  document.addEventListener('mouseup', e => {
-    if (!isDragging) return;
-    isDragging = false;
-    const dx = e.clientX - startX;
-    card.style.transform = '';
-    if (Math.abs(dx) > 80) swipeCard(dx>0?'right':'left');
+  document.addEventListener('mouseup',e=>{
+    if(!isDragging) return; isDragging=false;
+    const dx=e.clientX-startX; card.style.transform='';
+    if(Math.abs(dx)>80) swipeCard(dx>0?'right':'left');
   });
-  card.addEventListener('touchstart', e => { startX=e.touches[0].clientX; }, {passive:true});
-  card.addEventListener('touchmove', e => {
-    const dx = e.touches[0].clientX - startX;
-    card.style.transform = `translateX(${dx}px) rotate(${dx*.05}deg)`;
-  }, {passive:true});
-  card.addEventListener('touchend', e => {
-    const dx = e.changedTouches[0].clientX - startX;
-    card.style.transform = '';
-    if (Math.abs(dx) > 80) swipeCard(dx>0?'right':'left');
+  card.addEventListener('touchstart',e=>{startX=e.touches[0].clientX;},{passive:true});
+  card.addEventListener('touchmove',e=>{
+    const dx=e.touches[0].clientX-startX;
+    card.style.transform=`translateX(${dx}px) rotate(${dx*.05}deg)`;
+  },{passive:true});
+  card.addEventListener('touchend',e=>{
+    const dx=e.changedTouches[0].clientX-startX; card.style.transform='';
+    if(Math.abs(dx)>80) swipeCard(dx>0?'right':'left');
   });
 }
 
-function swipeCard(dir) {
-  const filtered = getFiltered();
-  if (swipeIndex >= filtered.length) return;
-  const topCard = document.querySelector('#swipe-stack .swipe-card:last-child');
-  if (!topCard) return;
+window.swipeCard=function(dir){
+  const filtered=getFiltered();
+  if(swipeIndex>=filtered.length) return;
+  const topCard=document.querySelector('#swipe-stack .swipe-card:last-child');
+  if(!topCard) return;
   topCard.classList.add(dir==='left'?'swiping-left':'swiping-right');
-  setTimeout(() => { swipeIndex++; render(); }, 380);
-}
+  setTimeout(()=>{swipeIndex++;render();},380);
+};
 
-function renderList(filtered) {
-  const grid = document.getElementById('list-grid');
-  if (!filtered.length) {
-    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:80px;color:var(--muted)"><div style="font-size:52px;margin-bottom:16px">🔍</div><h3 style="font-family:'Playfair Display',serif;font-size:22px;color:var(--ink);margin-bottom:8px">No recipes found</h3><p>Try adjusting your filters</p></div>`;
+function renderList(filtered){
+  const grid=document.getElementById('list-grid');
+  if(!filtered.length){
+    grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:80px;color:var(--muted)"><div style="font-size:52px;margin-bottom:16px">🔍</div><h3 style="font-family:'Playfair Display',serif;font-size:22px;color:var(--ink);margin-bottom:8px">No recipes found</h3><p>Try adjusting your filters</p></div>`;
     return;
   }
-  grid.innerHTML = filtered.map(r => `
-    <div class="list-card" onclick="openModal(${r.id})">
-      ${r.custom ? `<div class="custom-badge">✦ Custom</div>` : ''}
-      ${r.custom ? `<button class="delete-btn" onclick="deleteRecipe(${r.id}, event)" title="Delete recipe">✕</button>` : ''}
+  grid.innerHTML=filtered.map(r=>`
+    <div class="list-card" onclick="openModal('${r.id||r.firestoreId}')">
+      ${r.custom?`<div class="custom-badge">✦ Added</div>`:''}
+      ${r.custom?`<button class="delete-btn" onclick="deleteRecipe('${r.firestoreId}','${r.name.replace(/'/g,"\\'")}','${r.photo||''}',event)" title="Delete">✕</button>`:''}
       ${r.photo?`<img class="list-card-image" src="${r.photo}" alt="${r.name}">`:`<div class="list-card-placeholder">${r.emoji||'🍽️'}</div>`}
       <div class="list-card-body">
         <div class="card-tags"><span class="card-tag origin">${r.origin}</span><span class="card-tag type">${r.type}</span><span class="card-tag duration">${r.duration}</span></div>
@@ -495,17 +651,17 @@ function renderList(filtered) {
   `).join('');
 }
 
-function openModal(id) {
-  const r = recipes.find(x => x.id === id);
-  if (!r) return;
-  document.getElementById('modal-content').innerHTML = `
+window.openModal=function(id){
+  const r=allRecipes().find(x=>(x.id||x.firestoreId)===id);
+  if(!r) return;
+  document.getElementById('modal-content').innerHTML=`
     ${r.photo?`<img class="modal-image" src="${r.photo}" alt="${r.name}">`:`<div class="modal-image-placeholder">${r.emoji||'🍽️'}</div>`}
     <div class="modal-body">
       <div class="card-tags" style="margin-bottom:12px">
         <span class="card-tag origin">${r.origin}</span>
         <span class="card-tag type">${r.type}</span>
         <span class="card-tag duration">${r.duration}</span>
-        ${r.custom?`<span class="card-tag" style="background:#f5edd4;color:#b8952a">✦ Custom</span>`:''}
+        ${r.custom?`<span class="card-tag" style="background:#f5edd4;color:#b8952a">✦ Community</span>`:''}
       </div>
       <div class="modal-title">${r.name}</div>
       <div class="modal-desc">${r.desc}</div>
@@ -526,134 +682,80 @@ function openModal(id) {
     </div>
   `;
   document.getElementById('modal').classList.add('open');
-}
+};
 
-function switchTab(btn, panelId) {
-  const body = btn.closest('.modal-body');
-  body.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  body.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+window.switchTab=function(btn,panelId){
+  const body=btn.closest('.modal-body');
+  body.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  body.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById(panelId).classList.add('active');
-}
+};
 
-function closeModal(e) { if(e.target===document.getElementById('modal')) document.getElementById('modal').classList.remove('open'); }
-function closeAddModal(e) { if(e.target===document.getElementById('add-modal')) document.getElementById('add-modal').classList.remove('open'); }
+window.closeModal=function(e){ if(e.target===document.getElementById('modal')) document.getElementById('modal').classList.remove('open'); };
+window.closeAddModal=function(e){ if(e.target===document.getElementById('add-modal')) document.getElementById('add-modal').classList.remove('open'); };
 
 // ── INGREDIENT / STEP ROWS ──
-function parseIngredientLine(line) {
-  line = line.replace(/^[-•*]\s*/, '').trim();
-  const m = line.match(/^(\d[\d\/\.,]*\s*(?:g|kg|ml|l|cl|dl|el|tl|cup|cups|tbsp|tsp|st|stuks?|x|gram|liter|eetlepel|theelepel|snufje|handvol|teen|takje|blad)?\s*)/i);
-  if (m && m[1].trim()) return { amount: m[1].trim(), name: line.slice(m[1].length).trim() };
-  return { amount: '', name: line };
+function parseIngredientLine(line){
+  line=line.replace(/^[-•*]\s*/,'').trim();
+  const m=line.match(/^(\d[\d\/\.,]*\s*(?:g|kg|ml|l|cl|dl|el|tl|cup|cups|tbsp|tsp|st|stuks?|x|gram|liter|snufje|handvol)?\s*)/i);
+  if(m&&m[1].trim()) return{amount:m[1].trim(),name:line.slice(m[1].length).trim()};
+  return{amount:'',name:line};
 }
-
-function addIngredientRow(amount='', name='') {
-  const c = document.getElementById('ingredients-rows');
-  const d = document.createElement('div');
-  d.className = 'ingredient-row';
-  d.innerHTML = `<input class="form-input" placeholder="Amount" style="max-width:130px" value="${amount}"><input class="form-input" placeholder="Ingredient" value="${name}"><button class="remove-btn" onclick="this.closest('.ingredient-row').remove()">×</button>`;
-  const nameInput = d.querySelectorAll('input')[1];
-  const amountInput = d.querySelectorAll('input')[0];
-  [nameInput, amountInput].forEach(inp => {
-    inp.addEventListener('paste', e => {
-      const text = e.clipboardData.getData('text');
-      const lines = text.split('\n').map(l=>l.trim()).filter(Boolean);
-      if (lines.length <= 1) return;
-      e.preventDefault();
-      const first = parseIngredientLine(lines[0]);
-      amountInput.value = first.amount;
-      nameInput.value = first.name;
-      lines.slice(1).forEach(line => {
-        const parsed = parseIngredientLine(line);
-        addIngredientRow(parsed.amount, parsed.name);
-      });
-    });
+window.addIngredientRow=function(amount='',name=''){
+  const c=document.getElementById('ingredients-rows');
+  const d=document.createElement('div'); d.className='ingredient-row';
+  d.innerHTML=`<input class="form-input" placeholder="Amount" style="max-width:130px" value="${amount}"><input class="form-input" placeholder="Ingredient" value="${name}"><button class="remove-btn" onclick="this.closest('.ingredient-row').remove()">×</button>`;
+  const ni=d.querySelectorAll('input')[1],ai=d.querySelectorAll('input')[0];
+  [ni,ai].forEach(inp=>inp.addEventListener('paste',e=>{
+    const lines=e.clipboardData.getData('text').split('\n').map(l=>l.trim()).filter(Boolean);
+    if(lines.length<=1) return; e.preventDefault();
+    const f=parseIngredientLine(lines[0]); ai.value=f.amount; ni.value=f.name;
+    lines.slice(1).forEach(l=>{const p=parseIngredientLine(l);window.addIngredientRow(p.amount,p.name);});
+  }));
+  c.appendChild(d);
+};
+window.addStepRow=function(text=''){
+  const c=document.getElementById('steps-rows');
+  const n=c.children.length+1;
+  const d=document.createElement('div'); d.className='step-row';
+  d.innerHTML=`<span class="step-num">${n}</span><textarea class="form-input" placeholder="Describe this step..." rows="2" style="flex:1"></textarea><button class="remove-btn" onclick="window.removeStep(this)" style="margin-top:4px">×</button>`;
+  const ta=d.querySelector('textarea'); ta.value=text;
+  ta.addEventListener('paste',e=>{
+    const lines=e.clipboardData.getData('text').split('\n').map(l=>l.trim()).filter(Boolean);
+    if(lines.length<=1) return; e.preventDefault();
+    ta.value=lines[0].replace(/^(\d+[.)]\s*|[-•*]\s*)/,'');
+    lines.slice(1).forEach(l=>window.addStepRow(l.replace(/^(\d+[.)]\s*|[-•*]\s*)/,'')));
+    document.querySelectorAll('#steps-rows .step-num').forEach((el,i)=>el.textContent=i+1);
   });
   c.appendChild(d);
-}
-
-function addStepRow(text='') {
-  const c = document.getElementById('steps-rows');
-  const n = c.children.length + 1;
-  const d = document.createElement('div');
-  d.className = 'step-row';
-  d.innerHTML = `<span class="step-num">${n}</span><textarea class="form-input" placeholder="Describe this step..." rows="2" style="flex:1"></textarea><button class="remove-btn" onclick="removeStep(this)" style="margin-top:4px">×</button>`;
-  const ta = d.querySelector('textarea');
-  ta.value = text;
-  ta.addEventListener('paste', e => {
-    const pasted = e.clipboardData.getData('text');
-    const lines = pasted.split('\n').map(l=>l.trim()).filter(Boolean);
-    if (lines.length <= 1) return;
-    e.preventDefault();
-    ta.value = lines[0].replace(/^(\d+[.)]\s*|[-•*]\s*)/, '');
-    lines.slice(1).forEach(line => addStepRow(line.replace(/^(\d+[.)]\s*|[-•*]\s*)/, '')));
-    document.querySelectorAll('#steps-rows .step-num').forEach((el,i) => el.textContent=i+1);
-  });
-  c.appendChild(d);
-  document.querySelectorAll('#steps-rows .step-num').forEach((el,i) => el.textContent=i+1);
-}
-
-function removeStep(btn) {
+  document.querySelectorAll('#steps-rows .step-num').forEach((el,i)=>el.textContent=i+1);
+};
+window.removeStep=function(btn){
   btn.closest('.step-row').remove();
-  document.querySelectorAll('#steps-rows .step-num').forEach((el,i) => el.textContent=i+1);
-}
+  document.querySelectorAll('#steps-rows .step-num').forEach((el,i)=>el.textContent=i+1);
+};
 
-// ── ADD RECIPE ──
-function addRecipe() {
-  const name = document.getElementById('f-name').value.trim();
-  if (!name) { alert('Please enter a recipe name'); return; }
-  const ingRows = document.querySelectorAll('#ingredients-rows .ingredient-row');
-  const ingredients = Array.from(ingRows).map(row => {
-    const inputs = row.querySelectorAll('input');
-    return { amount: inputs[0].value.trim(), name: inputs[1].value.trim() };
-  }).filter(i => i.name);
-  const steps = Array.from(document.querySelectorAll('#steps-rows textarea')).map(t=>t.value.trim()).filter(Boolean);
-  const newRecipe = {
-    id: nextId++,
-    name,
-    desc: document.getElementById('f-desc').value.trim() || 'A delicious recipe.',
-    photo: document.getElementById('f-photo').value.trim(),
-    emoji: document.getElementById('f-emoji').value.trim() || '🍽️',
-    origin: formSelections.origin || 'Other',
-    type: formSelections.type || 'Dinner',
-    duration: formSelections.duration || 'Medium',
-    ingredients, steps,
-    custom: true  // marks this as user-added → will be persisted
-  };
-  recipes.unshift(newRecipe);
-  saveCustomRecipes();  // ← persist to localStorage
-  swipeIndex = 0;
-  formSelections = {origin:null,type:null,duration:null};
-  ['f-name','f-desc','f-photo','f-emoji'].forEach(id => document.getElementById(id).value='');
-  document.getElementById('ingredients-rows').innerHTML='';
-  addIngredientRow();
-  document.getElementById('steps-rows').innerHTML='';
-  addStepRow();
-  document.getElementById('add-modal').classList.remove('open');
-  buildFormSelects();
+window.setView=function(v){
+  currentView=v;
+  document.getElementById('swipe-view').style.display=v==='swipe'?'flex':'none';
+  document.getElementById('list-view').style.display=v==='list'?'block':'none';
+  document.getElementById('btn-swipe').classList.toggle('active',v==='swipe');
+  document.getElementById('btn-list').classList.toggle('active',v==='list');
   render();
-  showToast('✅ Recipe saved!');
-}
+};
 
-function setView(v) {
-  currentView = v;
-  document.getElementById('swipe-view').style.display = v==='swipe'?'flex':'none';
-  document.getElementById('list-view').style.display  = v==='list'?'block':'none';
-  document.getElementById('btn-swipe').classList.toggle('active', v==='swipe');
-  document.getElementById('btn-list').classList.toggle('active',  v==='list');
-  render();
+function showToast(msg){
+  const t=document.getElementById('toast'); t.textContent=msg;
+  t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2800);
 }
+window.showToast=showToast;
 
 // ── INIT ──
-// 1. Load custom recipes from localStorage
-const customRecipes = loadCustomRecipes();
-// 2. Merge: custom recipes first, then defaults (no duplicates)
-recipes = [...customRecipes, ...DEFAULT_RECIPES];
-
+setSyncStatus('syncing');
 addIngredientRow();
 addStepRow();
 buildFilters();
-render();
 </script>
 </body>
 </html>
