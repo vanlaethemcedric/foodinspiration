@@ -363,7 +363,7 @@ function setSyncStatus(status) {
   const dot   = document.getElementById('sync-dot');
   const label = document.getElementById('sync-label');
   dot.className = 'sync-dot';
-  if (status === 'ok')       { dot.classList.add(''); label.textContent = 'Synced'; }
+  if (status === 'ok')       { label.textContent = 'Synced'; }
   else if (status === 'syncing') { dot.classList.add('syncing'); label.textContent = 'Syncing…'; }
   else                        { dot.classList.add('error');   label.textContent = 'Offline'; }
 }
