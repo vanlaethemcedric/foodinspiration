@@ -783,19 +783,35 @@ function renderList(filtered){
     grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:80px;color:var(--muted)"><div style="font-size:52px;margin-bottom:16px">🔍</div><h3 style="font-family:'Playfair Display',serif;font-size:22px;color:var(--ink);margin-bottom:8px">No recipes found</h3><p>Try adjusting your filters</p></div>`;
     return;
   }
-  grid.innerHTML=filtered.map(r=>`
-    <div class="list-card" onclick="openModal('${r.id||r.firestoreId}')">
-      ${r.custom?`<div class="custom-badge">✦ Added</div>`:''}
-      ${r.custom?`<button class="delete-btn" onclick="deleteRecipe('${r.firestoreId}','${r.name.replace(/'/g,"\\'")}','${r.photo||''}',event)" title="Delete">✕</button>`:''}
-      ${r.photo?`<img class="list-card-image" src="${r.photo}" alt="${r.name}">`:`<div class="list-card-placeholder">${r.emoji||'🍽️'}</div>`}
+  grid.innerHTML = filtered.map(r => {
+    const rid = r.id || r.firestoreId;
+    const safeName = (r.name||'').replace(/'/g, "\'");
+    const safePhoto = (r.photo||'').replace(/'/g, "\'");
+    const likedTag = isLiked(r) ? '<span class="card-tag liked">❤️ Liked</span>' : '';
+    const actionBar = r.custom ? `
+      <div class="card-actions">
+        <button class="card-action-btn edit" onclick="event.stopPropagation();openEditModal('${r.firestoreId}',event)">✏️ Edit</button>
+        <button class="card-action-btn del" onclick="event.stopPropagation();deleteRecipe('${r.firestoreId}','${safeName}','${safePhoto}',event)">🗑️ Delete</button>
+      </div>` : '';
+    return `
+    <div class="list-card" onclick="openModal('${rid}')">
+      ${r.custom ? '<div class="custom-badge">✦ Added</div>' : ''}
+      ${r.photo ? `<img class="list-card-image" src="${r.photo}" alt="${r.name}">` : `<div class="list-card-placeholder">${r.emoji||'🍽️'}</div>`}
       <div class="list-card-body">
-        <div class="card-tags"><span class="card-tag origin">${r.origin}</span><span class="card-tag type">${r.type}</span><span class="card-tag duration">${r.duration}</span></div>
+        <div class="card-tags">
+          <span class="card-tag origin">${r.origin}</span>
+          <span class="card-tag type">${r.type}</span>
+          <span class="card-tag duration">${r.duration}</span>
+          ${likedTag}
+        </div>
         <div class="list-card-title">${r.name}</div>
         <div class="list-card-desc">${r.desc}</div>
+        ${actionBar}
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 }
+
 
 window.openModal=function(id){
   const r=allRecipes().find(x=>(x.id||x.firestoreId)===id);
