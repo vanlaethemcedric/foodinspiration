@@ -85,6 +85,15 @@
   .list-card:hover .delete-btn{opacity:1}
   .edit-btn{position:absolute;top:10px;right:44px;width:28px;height:28px;border-radius:50%;background:rgba(28,28,26,.75);color:white;border:none;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s;z-index:5}
   .list-card:hover .edit-btn{opacity:1}
+  .card-tag.liked{background:#fce4ec;color:#c2185b;}
+  .swipe-overlay{position:absolute;top:20px;font-size:32px;font-weight:900;opacity:0;transition:opacity .15s;pointer-events:none;z-index:10;padding:8px 16px;border-radius:10px;border:3px solid;}
+  .swipe-overlay.like{left:20px;color:#16a34a;border-color:#16a34a;background:rgba(240,255,240,.85);}
+  .swipe-overlay.nope{right:20px;color:#dc2626;border-color:#dc2626;background:rgba(255,240,240,.85);}
+  .discover-mode-bar{display:flex;gap:8px;align-items:center;margin-bottom:20px;flex-wrap:wrap;justify-content:center;}
+  .mode-btn{padding:7px 18px;border-radius:20px;border:1.5px solid var(--border);background:var(--cream);font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;}
+  .mode-btn.active{background:var(--charcoal);color:white;border-color:var(--charcoal);}
+  .edit-btn{position:absolute;top:10px;right:44px;width:28px;height:28px;border-radius:50%;background:rgba(28,28,26,.75);color:white;border:none;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s;z-index:5}
+  .list-card:hover .edit-btn{opacity:1}
   .custom-badge{position:absolute;top:10px;left:10px;background:var(--charcoal);color:var(--gold);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:3px 8px;border-radius:4px}
 
   .modal-overlay{display:none;position:fixed;inset:0;background:rgba(28,28,26,.7);z-index:200;align-items:center;justify-content:center;padding:24px}
@@ -200,6 +209,13 @@
     <span class="filter-label">Time</span>
     <div class="filter-tags" id="filter-duration"></div>
   </div>
+  <div class="filter-divider"></div>
+  <div class="filter-col">
+    <span class="filter-label">Liked</span>
+    <div class="filter-tags">
+      <span class="tag" id="tag-liked" onclick="toggleLikedFilter()">❤️ Liked</span>
+    </div>
+  </div>
   <div class="results-meta">
     <span class="results-count" id="results-count"></span>
     <button class="clear-btn" onclick="clearFilters()">Clear all filters</button>
@@ -207,13 +223,18 @@
 </div>
 
 <div id="swipe-view">
+  <div class="discover-mode-bar">
+    <span style="font-size:12px;color:var(--muted);font-weight:600">Show:</span>
+    <button class="mode-btn active" id="mode-all" onclick="setDiscoverMode('all')">🍽️ All</button>
+    <button class="mode-btn" id="mode-liked" onclick="setDiscoverMode('liked')">❤️ Liked</button>
+    <button class="mode-btn" id="mode-unliked" onclick="setDiscoverMode('unliked')">🔍 Not yet liked</button>
+  </div>
   <div class="swipe-stack" id="swipe-stack"></div>
   <div class="swipe-actions">
-    <button class="swipe-btn btn-skip" onclick="swipeCard('left')" title="Skip">✕</button>
+    <button class="swipe-btn btn-skip" onclick="swipeCard('left')" title="Nope" style="background:white;color:#dc2626;font-size:24px;">✕</button>
     <button class="swipe-btn btn-save" onclick="swipeCard('right')" title="Like">♥</button>
-    <button class="swipe-btn btn-next" onclick="swipeCard('left')" title="Next">→</button>
   </div>
-  <p class="swipe-hint">Swipe or use buttons · Tap card for ingredients &amp; steps</p>
+  <p class="swipe-hint">← Nope &nbsp;·&nbsp; ♥ Like → &nbsp;·&nbsp; Tap card for details</p>
 </div>
 
 <div id="list-view">
@@ -362,7 +383,7 @@
 <!-- Firebase SDKs -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, addDoc, deleteDoc, doc, updateDoc, onSnapshot, query, orderBy, serverTimestamp }
+import { getFirestore, collection, addDoc, deleteDoc, doc, updateDoc, setDoc, onSnapshot, query, orderBy, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 // Cloudinary is used for photo storage (no Firebase Storage needed)
 
@@ -412,12 +433,23 @@ const DEFAULT_RECIPES = [
 // ── STATE ──
 let customRecipes = [];   // from Firestore
 let activeFilters  = {origin:[],type:[],duration:[]};
+let filterLiked    = false;
+let discoverMode   = 'all'; // 'all' | 'liked' | 'unliked'
+let likedIds       = new Set(); // loaded from Firestore
 let currentView    = 'swipe';
 let swipeIndex     = 0;
 let formSelections = {origin:null,type:null,duration:null};
 let startX=0, isDragging=false;
 let selectedPhotoFile = null;
 let pendingPhotoURL   = null;
+
+async function saveLikes(rid, liked) {
+  try {
+    await setDoc(doc(db, 'likes', 'global'), { ids: [...likedIds] });
+  } catch(e) { console.warn('Could not save like', e); }
+}
+function isLiked(r) { return likedIds.has(r.id||r.firestoreId); }
+function likedBadge(r) { return isLiked(r) ? `<span class="card-tag liked">❤️ Liked</span>` : ''; }
 
 function allRecipes() {
   return [...customRecipes, ...DEFAULT_RECIPES];
@@ -449,6 +481,19 @@ onSnapshot(q,
     showToast('⚠️ Could not load recipes from server');
     render();
   }
+);
+
+// ── FIRESTORE LIKES LISTENER ──
+onSnapshot(doc(db, 'likes', 'global'),
+  (snap) => {
+    if (snap.exists()) {
+      likedIds = new Set(snap.data().ids || []);
+    } else {
+      likedIds = new Set();
+    }
+    render();
+  },
+  (err) => { console.warn('Could not load likes', err); }
 );
 
 // ── PHOTO HANDLING ──
@@ -586,11 +631,14 @@ window.deleteRecipe = async function(firestoreId, name, photoURL, e) {
 };
 
 // ── FILTERS ──
-function getFiltered() {
+function getFiltered(forDiscover=false) {
   return allRecipes().filter(r => {
     if (activeFilters.origin.length   && !activeFilters.origin.includes(r.origin))   return false;
     if (activeFilters.type.length     && !activeFilters.type.includes(r.type))       return false;
     if (activeFilters.duration.length && !activeFilters.duration.includes(r.duration)) return false;
+    if (!forDiscover && filterLiked && !isLiked(r)) return false;
+    if (forDiscover && discoverMode === 'liked'   && !isLiked(r)) return false;
+    if (forDiscover && discoverMode === 'unliked' &&  isLiked(r)) return false;
     return true;
   });
 }
@@ -610,7 +658,7 @@ window.toggleFilter = function(key,val){
   swipeIndex=0; buildFilters(); render();
 };
 window.clearFilters = function(){
-  activeFilters={origin:[],type:[],duration:[]}; swipeIndex=0; buildFilters(); render();
+  activeFilters={origin:[],type:[],duration:[]}; filterLiked=false; swipeIndex=0; buildFilters(); render();
 };
 function buildFormSelects(){
   ['origin','type','duration'].forEach(key=>{
@@ -625,11 +673,14 @@ window.selectForm=function(key,val){ formSelections[key]=formSelections[key]===v
 
 // ── RENDER ──
 function render(){
-  const filtered=getFiltered();
-  const total=activeFilters.origin.length+activeFilters.type.length+activeFilters.duration.length;
+  const filtered=getFiltered(false);
+  const total=activeFilters.origin.length+activeFilters.type.length+activeFilters.duration.length+(filterLiked?1:0);
   document.getElementById('results-count').textContent=
     `${filtered.length} recipe${filtered.length!==1?'s':''}${total?' (filtered)':''}`;
-  if(currentView==='swipe') renderSwipe(filtered);
+  // update liked tag style
+  const lt = document.getElementById('tag-liked');
+  if (lt) lt.className = 'tag' + (filterLiked ? ' active-origin' : '');
+  if(currentView==='swipe') renderSwipe(getFiltered(true));
   else renderList(filtered);
 }
 
@@ -647,16 +698,18 @@ function renderSwipe(filtered){
   }
   stack.innerHTML=visible.slice().reverse().map((r,i)=>`
     <div class="swipe-card" data-id="${r.id||r.firestoreId}" ${i===0?`onclick="openModal('${r.id||r.firestoreId}')"`:''}> 
+      ${i===0?`<div class="swipe-overlay like">❤️ LIKE</div><div class="swipe-overlay nope">✕ NOPE</div>`:''}
       ${r.photo?`<img class="card-image" src="${r.photo}" alt="${r.name}">`:`<div class="card-image-placeholder">${r.emoji||'🍽️'}</div>`}
       <div class="card-body">
         <div class="card-tags">
           <span class="card-tag origin">${r.origin}</span>
           <span class="card-tag type">${r.type}</span>
           <span class="card-tag duration">${r.duration}</span>
+          ${isLiked(r)?`<span class="card-tag liked">❤️</span>`:''}
         </div>
         <div class="card-title">${r.name}</div>
         <div class="card-desc">${r.desc}</div>
-        ${i===0?`<div class="card-hint">↑ Tap for ingredients &amp; steps</div>`:''}
+        ${i===0?`<div class="card-hint">↑ Tap for details · swipe left/right</div>`:''}
       </div>
     </div>
   `).join('');
@@ -670,6 +723,10 @@ function setupDrag(card){
     if(!isDragging) return;
     const dx=e.clientX-startX;
     card.style.transform=`translateX(${dx}px) rotate(${dx*.05}deg)`;
+    const likeEl=card.querySelector('.swipe-overlay.like');
+    const nopeEl=card.querySelector('.swipe-overlay.nope');
+    if(likeEl) likeEl.style.opacity=dx>20?Math.min((dx-20)/60,1):0;
+    if(nopeEl) nopeEl.style.opacity=dx<-20?Math.min((-dx-20)/60,1):0;
   });
   document.addEventListener('mouseup',e=>{
     if(!isDragging) return; isDragging=false;
@@ -680,6 +737,10 @@ function setupDrag(card){
   card.addEventListener('touchmove',e=>{
     const dx=e.touches[0].clientX-startX;
     card.style.transform=`translateX(${dx}px) rotate(${dx*.05}deg)`;
+    const likeEl=card.querySelector('.swipe-overlay.like');
+    const nopeEl=card.querySelector('.swipe-overlay.nope');
+    if(likeEl) likeEl.style.opacity=dx>20?Math.min((dx-20)/60,1):0;
+    if(nopeEl) nopeEl.style.opacity=dx<-20?Math.min((-dx-20)/60,1):0;
   },{passive:true});
   card.addEventListener('touchend',e=>{
     const dx=e.changedTouches[0].clientX-startX; card.style.transform='';
@@ -688,12 +749,30 @@ function setupDrag(card){
 }
 
 window.swipeCard=function(dir){
-  const filtered=getFiltered();
+  const filtered=getFiltered(true);
   if(swipeIndex>=filtered.length) return;
   const topCard=document.querySelector('#swipe-stack .swipe-card:last-child');
   if(!topCard) return;
+  // Like or unlike
+  const r = filtered[swipeIndex];
+  const rid = r.id||r.firestoreId;
+  if(dir==='right') { likedIds.add(rid); }
+  else { likedIds.delete(rid); }
+  saveLikes(); // async, fire-and-forget
   topCard.classList.add(dir==='left'?'swiping-left':'swiping-right');
   setTimeout(()=>{swipeIndex++;render();},380);
+};
+
+window.setDiscoverMode=function(mode){
+  discoverMode=mode; swipeIndex=0;
+  ['all','liked','unliked'].forEach(m=>{
+    document.getElementById('mode-'+m).classList.toggle('active',m===mode);
+  });
+  render();
+};
+
+window.toggleLikedFilter=function(){
+  filterLiked=!filterLiked; render();
 };
 
 function renderList(filtered){
