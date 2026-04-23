@@ -83,6 +83,8 @@
   .list-card-desc{font-size:12px;color:var(--muted);line-height:1.5;margin-top:6px}
   .delete-btn{position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:50%;background:rgba(200,68,42,.85);color:white;border:none;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s;z-index:5}
   .list-card:hover .delete-btn{opacity:1}
+  .edit-btn{position:absolute;top:10px;right:44px;width:28px;height:28px;border-radius:50%;background:rgba(28,28,26,.75);color:white;border:none;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s;z-index:5}
+  .list-card:hover .edit-btn{opacity:1}
   .custom-badge{position:absolute;top:10px;left:10px;background:var(--charcoal);color:var(--gold);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:3px 8px;border-radius:4px}
 
   .modal-overlay{display:none;position:fixed;inset:0;background:rgba(28,28,26,.7);z-index:200;align-items:center;justify-content:center;padding:24px}
@@ -226,6 +228,69 @@
   </div>
 </div>
 
+<!-- Edit Recipe Modal -->
+<div class="modal-overlay" id="edit-modal" onclick="closeEditModalOverlay(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="document.getElementById('edit-modal').classList.remove('open')">✕</button>
+    <div class="modal-body">
+      <h2 style="font-family:'Playfair Display',serif;font-size:24px;margin-bottom:20px">✏️ Edit Recipe</h2>
+      <input type="hidden" id="e-firestoreid">
+      <div class="form-group">
+        <label class="form-label">Recipe name *</label>
+        <input class="form-input" id="e-name" placeholder="e.g. Spaghetti Carbonara">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea class="form-input" id="e-desc" rows="2" placeholder="Short description..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">📷 Photo <span style="font-weight:400;text-transform:none;letter-spacing:0">(upload new to replace)</span></label>
+        <div class="photo-upload-area" id="e-photo-upload-area">
+          <input class="photo-input" type="file" id="e-photo-file" accept="image/*" onchange="handleEditPhotoSelect(this)">
+          <div id="e-photo-placeholder">
+            <div class="photo-upload-icon">📸</div>
+            <span class="photo-upload-label">Click to upload · On mobile: camera or gallery</span>
+          </div>
+          <img class="photo-preview" id="e-photo-preview" style="display:none" alt="Preview">
+          <button class="photo-remove" id="e-photo-remove" style="display:none" onclick="removeEditPhoto(event)">✕</button>
+        </div>
+        <div class="upload-progress" id="e-upload-progress">
+          <div class="upload-progress-bar" id="e-upload-progress-bar"></div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Emoji (shown when no photo)</label>
+        <input class="form-input" id="e-emoji" placeholder="🍝" maxlength="4" style="max-width:120px">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Origin</label>
+        <div class="form-select-group" id="e-origin"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Meal type</label>
+        <div class="form-select-group" id="e-type"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Duration</label>
+        <div class="form-select-group" id="e-duration"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Ingredients</label>
+        <div id="e-ingredients-rows"></div>
+        <button class="add-row-btn" onclick="addEditIngredientRow()">+ Add ingredient</button>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Steps</label>
+        <div id="e-steps-rows"></div>
+        <button class="add-row-btn" onclick="addEditStepRow()">+ Add step</button>
+      </div>
+      <button class="submit-btn" id="e-submit-btn" onclick="saveEdit()" style="background:var(--green)">
+        <span id="e-submit-label">💾 Save Changes</span>
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- Add Recipe Modal -->
 <div class="modal-overlay" id="add-modal" onclick="closeAddModal(event)">
   <div class="modal">
@@ -245,7 +310,7 @@
       <div class="form-group">
         <label class="form-label">📷 Photo <span style="font-weight:400;text-transform:none;letter-spacing:0">(upload or take with camera)</span></label>
         <div class="photo-upload-area" id="photo-upload-area">
-          <input class="photo-input" type="file" id="f-photo-file" accept="image/*" capture="environment" onchange="handlePhotoSelect(this)">
+          <input class="photo-input" type="file" id="f-photo-file" accept="image/*" onchange="handlePhotoSelect(this)">
           <div id="photo-placeholder">
             <div class="photo-upload-icon">📸</div>
             <span class="photo-upload-label">Click to upload · On mobile: use camera or gallery</span>
@@ -297,7 +362,7 @@
 <!-- Firebase SDKs -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp }
+import { getFirestore, collection, addDoc, deleteDoc, doc, updateDoc, onSnapshot, query, orderBy, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 // Cloudinary is used for photo storage (no Firebase Storage needed)
 
@@ -750,6 +815,171 @@ function showToast(msg){
   t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2800);
 }
 window.showToast=showToast;
+
+
+// ── EDIT MODAL ──
+let editSelections = {origin:null, type:null, duration:null};
+let editPhotoFile = null;
+let editExistingPhotoURL = '';
+
+window.openEditModal = function(firestoreId, e) {
+  e.stopPropagation();
+  const r = customRecipes.find(x => x.firestoreId === firestoreId);
+  if (!r) return;
+
+  // Prefill fields
+  document.getElementById('e-firestoreid').value = firestoreId;
+  document.getElementById('e-name').value = r.name || '';
+  document.getElementById('e-desc').value = r.desc || '';
+  document.getElementById('e-emoji').value = r.emoji || '';
+
+  // Photo
+  editPhotoFile = null;
+  editExistingPhotoURL = r.photo || '';
+  if (r.photo) {
+    document.getElementById('e-photo-preview').src = r.photo;
+    document.getElementById('e-photo-preview').style.display = 'block';
+    document.getElementById('e-photo-placeholder').style.display = 'none';
+    document.getElementById('e-photo-remove').style.display = 'flex';
+    document.getElementById('e-photo-upload-area').classList.add('has-preview');
+  } else {
+    document.getElementById('e-photo-preview').style.display = 'none';
+    document.getElementById('e-photo-placeholder').style.display = 'block';
+    document.getElementById('e-photo-remove').style.display = 'none';
+    document.getElementById('e-photo-upload-area').classList.remove('has-preview');
+  }
+
+  // Tags
+  editSelections = { origin: r.origin||null, type: r.type||null, duration: r.duration||null };
+  buildEditSelects();
+
+  // Ingredients
+  document.getElementById('e-ingredients-rows').innerHTML = '';
+  (r.ingredients||[]).forEach(i => addEditIngredientRow(i.amount, i.name));
+  if (!r.ingredients || r.ingredients.length === 0) addEditIngredientRow();
+
+  // Steps
+  document.getElementById('e-steps-rows').innerHTML = '';
+  (r.steps||[]).forEach(s => addEditStepRow(s));
+  if (!r.steps || r.steps.length === 0) addEditStepRow();
+
+  document.getElementById('edit-modal').classList.add('open');
+};
+
+function buildEditSelects() {
+  ['origin','type','duration'].forEach(key => {
+    const items = key==='origin'?ORIGINS:key==='type'?TYPES:DURATIONS;
+    const el = document.getElementById('e-'+key); if (!el) return;
+    el.innerHTML = items.map(v =>
+      `<span class="form-tag ${editSelections[key]===v?'sel-'+key:''}" onclick="selectEdit('${key}','${v}')">${v}</span>`
+    ).join('');
+  });
+}
+window.selectEdit = function(key,val) {
+  editSelections[key] = editSelections[key]===val ? null : val;
+  buildEditSelects();
+};
+
+window.handleEditPhotoSelect = function(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 10*1024*1024) { showToast('⚠️ Photo must be under 10MB'); return; }
+  editPhotoFile = file;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('e-photo-preview').src = e.target.result;
+    document.getElementById('e-photo-preview').style.display = 'block';
+    document.getElementById('e-photo-placeholder').style.display = 'none';
+    document.getElementById('e-photo-remove').style.display = 'flex';
+    document.getElementById('e-photo-upload-area').classList.add('has-preview');
+  };
+  reader.readAsDataURL(file);
+};
+
+window.removeEditPhoto = function(e) {
+  e.stopPropagation();
+  editPhotoFile = null;
+  editExistingPhotoURL = '';
+  document.getElementById('e-photo-preview').style.display = 'none';
+  document.getElementById('e-photo-preview').src = '';
+  document.getElementById('e-photo-placeholder').style.display = 'block';
+  document.getElementById('e-photo-remove').style.display = 'none';
+  document.getElementById('e-photo-upload-area').classList.remove('has-preview');
+  document.getElementById('e-photo-file').value = '';
+};
+
+window.addEditIngredientRow = function(amount='', name='') {
+  const c = document.getElementById('e-ingredients-rows');
+  const d = document.createElement('div'); d.className = 'ingredient-row';
+  d.innerHTML = `<input class="form-input" placeholder="Amount" style="max-width:130px" value="${amount}"><input class="form-input" placeholder="Ingredient" value="${name}"><button class="remove-btn" onclick="this.closest('.ingredient-row').remove()">×</button>`;
+  c.appendChild(d);
+};
+
+window.addEditStepRow = function(text='') {
+  const c = document.getElementById('e-steps-rows');
+  const n = c.children.length + 1;
+  const d = document.createElement('div'); d.className = 'step-row';
+  d.innerHTML = `<span class="step-num">${n}</span><textarea class="form-input" placeholder="Describe this step..." rows="2" style="flex:1"></textarea><button class="remove-btn" onclick="removeEditStep(this)" style="margin-top:4px">×</button>`;
+  d.querySelector('textarea').value = text;
+  c.appendChild(d);
+  c.querySelectorAll('.step-num').forEach((el,i) => el.textContent = i+1);
+};
+
+window.removeEditStep = function(btn) {
+  btn.closest('.step-row').remove();
+  document.querySelectorAll('#e-steps-rows .step-num').forEach((el,i) => el.textContent = i+1);
+};
+
+window.saveEdit = async function() {
+  const firestoreId = document.getElementById('e-firestoreid').value;
+  const name = document.getElementById('e-name').value.trim();
+  if (!name) { alert('Please enter a recipe name'); return; }
+
+  const btn = document.getElementById('e-submit-btn');
+  const label = document.getElementById('e-submit-label');
+  btn.disabled = true; label.textContent = '⏳ Saving…';
+
+  try {
+    let photoURL = editExistingPhotoURL;
+    if (editPhotoFile) {
+      label.textContent = '📤 Uploading photo…';
+      photoURL = await uploadPhoto(editPhotoFile);
+    }
+
+    const ingRows = document.querySelectorAll('#e-ingredients-rows .ingredient-row');
+    const ingredients = Array.from(ingRows).map(row => {
+      const inputs = row.querySelectorAll('input');
+      return { amount: inputs[0].value.trim(), name: inputs[1].value.trim() };
+    }).filter(i => i.name);
+    const steps = Array.from(document.querySelectorAll('#e-steps-rows textarea'))
+      .map(t => t.value.trim()).filter(Boolean);
+
+    await updateDoc(doc(db, 'recipes', firestoreId), {
+      name,
+      desc:     document.getElementById('e-desc').value.trim() || 'A delicious recipe.',
+      photo:    photoURL,
+      emoji:    document.getElementById('e-emoji').value.trim() || '🍽️',
+      origin:   editSelections.origin   || 'Other',
+      type:     editSelections.type     || 'Dinner',
+      duration: editSelections.duration || 'Medium',
+      ingredients, steps,
+    });
+
+    document.getElementById('edit-modal').classList.remove('open');
+    showToast('✅ Recipe updated!');
+  } catch(err) {
+    console.error(err);
+    showToast('❌ Update failed: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    label.textContent = '💾 Save Changes';
+  }
+};
+
+window.closeEditModalOverlay = function(e) {
+  if (e.target === document.getElementById('edit-modal'))
+    document.getElementById('edit-modal').classList.remove('open');
+};
 
 // ── INIT ──
 setSyncStatus('syncing');
