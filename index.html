@@ -720,33 +720,51 @@ function renderSwipe(filtered){
 }
 
 function setupDrag(card){
-  card.addEventListener('mousedown',e=>{startX=e.clientX;isDragging=true;});
-  document.addEventListener('mousemove',e=>{
-    if(!isDragging) return;
-    const dx=e.clientX-startX;
-    card.style.transform=`translateX(${dx}px) rotate(${dx*.05}deg)`;
+  let startY=0, movedX=0, movedY=0, active=false;
+
+  function onStart(x, y) { startX=x; startY=y; movedX=0; movedY=0; active=true; }
+  function onMove(x, y) {
+    if(!active) return;
+    movedX=x-startX; movedY=y-startY;
+    // Only allow horizontal swipe — block if vertical movement dominates
+    if(Math.abs(movedY) > Math.abs(movedX) && Math.abs(movedY) > 10) { active=false; card.style.transform=''; return; }
+    card.style.transform=`translateX(${movedX}px) rotate(${movedX*.04}deg)`;
     const likeEl=card.querySelector('.swipe-overlay.like');
     const nopeEl=card.querySelector('.swipe-overlay.nope');
-    if(likeEl) likeEl.style.opacity=dx>20?Math.min((dx-20)/60,1):0;
-    if(nopeEl) nopeEl.style.opacity=dx<-20?Math.min((-dx-20)/60,1):0;
-  });
-  document.addEventListener('mouseup',e=>{
-    if(!isDragging) return; isDragging=false;
-    const dx=e.clientX-startX; card.style.transform='';
-    if(Math.abs(dx)>80) swipeCard(dx>0?'right':'left');
-  });
-  card.addEventListener('touchstart',e=>{startX=e.touches[0].clientX;},{passive:true});
-  card.addEventListener('touchmove',e=>{
-    const dx=e.touches[0].clientX-startX;
-    card.style.transform=`translateX(${dx}px) rotate(${dx*.05}deg)`;
+    if(likeEl) likeEl.style.opacity=movedX>20?Math.min((movedX-20)/60,1):0;
+    if(nopeEl) nopeEl.style.opacity=movedX<-20?Math.min((-movedX-20)/60,1):0;
+  }
+  function onEnd() {
+    if(!active) return; active=false;
+    card.style.transform='';
     const likeEl=card.querySelector('.swipe-overlay.like');
     const nopeEl=card.querySelector('.swipe-overlay.nope');
-    if(likeEl) likeEl.style.opacity=dx>20?Math.min((dx-20)/60,1):0;
-    if(nopeEl) nopeEl.style.opacity=dx<-20?Math.min((-dx-20)/60,1):0;
-  },{passive:true});
-  card.addEventListener('touchend',e=>{
-    const dx=e.changedTouches[0].clientX-startX; card.style.transform='';
-    if(Math.abs(dx)>80) swipeCard(dx>0?'right':'left');
+    if(likeEl) likeEl.style.opacity=0;
+    if(nopeEl) nopeEl.style.opacity=0;
+    if(Math.abs(movedX)>80 && Math.abs(movedX) > Math.abs(movedY)*1.5) {
+      swipeCard(movedX>0?'right':'left');
+    }
+  }
+
+  // Mouse
+  card.addEventListener('mousedown', e=>{ e.preventDefault(); onStart(e.clientX, e.clientY); });
+  document.addEventListener('mousemove', e=>{ onMove(e.clientX, e.clientY); });
+  document.addEventListener('mouseup', ()=>{ onEnd(); });
+
+  // Touch
+  card.addEventListener('touchstart', e=>{ onStart(e.touches[0].clientX, e.touches[0].clientY); }, {passive:true});
+  card.addEventListener('touchmove', e=>{
+    onMove(e.touches[0].clientX, e.touches[0].clientY);
+    // Prevent page scroll only when swiping horizontally
+    if(active && Math.abs(movedX) > Math.abs(movedY)) e.preventDefault();
+  }, {passive:false});
+  card.addEventListener('touchend', e=>{
+    onEnd();
+  }, {passive:true});
+
+  // Prevent click from firing after a swipe
+  card.addEventListener('click', e=>{
+    if(Math.abs(movedX) > 10) e.stopPropagation();
   });
 }
 
