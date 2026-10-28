@@ -22,6 +22,10 @@
   .view-toggle{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:8px;padding:4px}
   .view-btn{background:none;border:none;color:rgba(255,255,255,.5);padding:8px 14px;border-radius:6px;cursor:pointer;font-size:13px;font-family:'DM Sans',sans-serif;font-weight:500;transition:all .2s}
   .view-btn.active{background:var(--cream);color:var(--charcoal)}
+  .profile-toggle{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:8px;padding:4px}
+  .profile-btn{background:none;border:none;color:rgba(255,255,255,.5);padding:8px 14px;border-radius:6px;cursor:pointer;font-size:13px;font-family:'DM Sans',sans-serif;font-weight:500;transition:all .2s;white-space:nowrap}
+  .profile-btn.active.p-cedric{background:var(--green);color:white}
+  .profile-btn.active.p-dana{background:var(--accent);color:white}
   .sync-badge{font-size:10px;font-family:'DM Sans',sans-serif;color:rgba(255,255,255,.4);display:flex;align-items:center;gap:5px}
   .sync-dot{width:7px;height:7px;border-radius:50%;background:#4ade80;transition:background .3s}
   .sync-dot.syncing{background:#f59e0b;animation:pulse 1s infinite}
@@ -175,6 +179,22 @@
   @keyframes spin{to{transform:rotate(360deg)}}
   .loading-text{font-size:14px;color:var(--muted)}
 
+  /* ── PROFILE GATE ── */
+  /* Shown on every visit, on any device — the choice is never remembered
+     locally, since this app is meant to be reached over the internet by
+     both people from whatever browser/phone they happen to have open. */
+  .profile-gate{position:fixed;inset:0;background:var(--cream);z-index:500;display:flex;align-items:center;justify-content:center;padding:24px}
+  .profile-gate.closed{display:none}
+  .profile-gate-card{text-align:center;max-width:360px}
+  .profile-gate-logo{font-family:'Playfair Display',serif;font-size:28px;color:var(--charcoal);margin-bottom:6px}
+  .profile-gate-logo span{font-style:italic;color:var(--gold)}
+  .profile-gate-sub{font-size:14px;color:var(--muted);margin-bottom:28px}
+  .profile-gate-buttons{display:flex;gap:16px;justify-content:center}
+  .profile-gate-btn{padding:18px 28px;border-radius:16px;border:1.5px solid var(--border);background:white;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;transition:all .15s;box-shadow:0 2px 12px rgba(28,28,26,.06);min-width:120px}
+  .profile-gate-btn:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+  .profile-gate-btn.p-cedric:hover{border-color:var(--green);color:var(--green)}
+  .profile-gate-btn.p-dana:hover{border-color:var(--accent);color:var(--accent)}
+
   @media(max-width:600px){
     header{padding:16px 20px}
     .filters-bar{padding:12px 20px}
@@ -192,9 +212,25 @@
   <div class="loading-text">Loading recipes…</div>
 </div>
 
+<!-- Profile gate: asked fresh on every visit, on every device -->
+<div class="profile-gate" id="profile-gate">
+  <div class="profile-gate-card">
+    <div class="profile-gate-logo">mise <span>en place</span></div>
+    <p class="profile-gate-sub">Wie ben jij?</p>
+    <div class="profile-gate-buttons">
+      <button class="profile-gate-btn p-cedric" onclick="setProfile('cedric')">👨 Cédric</button>
+      <button class="profile-gate-btn p-dana" onclick="setProfile('dana')">👩 Dana</button>
+    </div>
+  </div>
+</div>
+
 <header>
   <div class="logo">mise <span>en place</span></div>
   <div class="header-right">
+    <div class="profile-toggle">
+      <button class="profile-btn" id="profile-cedric" onclick="setProfile('cedric')">👨 Cédric</button>
+      <button class="profile-btn" id="profile-dana" onclick="setProfile('dana')">👩 Dana</button>
+    </div>
     <div class="sync-badge">
       <div class="sync-dot" id="sync-dot"></div>
       <span id="sync-label">Connecting…</span>
@@ -428,6 +464,7 @@ const db  = getFirestore(app);
 const ORIGINS  = ['Italian','Belgian','French','Asian','American BBQ','Mexican','Japanese','Greek','Spanish','Middle Eastern'];
 const TYPES    = ['Breakfast','Lunch','Dinner','Dessert','Snack','Starter','Brunch'];
 const DURATIONS= ['Quick','Medium','Long'];
+const PROFILES = ['cedric','dana'];
 
 const DEFAULT_RECIPES = [
   {id:'default-1',name:'Spaghetti Carbonara',origin:'Italian',type:'Dinner',duration:'Medium',emoji:'🍝',photo:'',servings:2,
@@ -457,7 +494,13 @@ let customRecipes  = [];
 let activeFilters  = {origin:[],type:[],duration:[]};
 let filterLiked    = false;
 let discoverMode   = 'all';
-let likedIds       = new Set();
+// Per-profile liked-id sets. Populated by two parallel Firestore listeners
+// (one per profile) so switching profiles is instant, no re-subscribe needed.
+let likedIdsByProfile = { cedric: new Set(), dana: new Set() };
+// Who's currently using the app. Deliberately NOT persisted anywhere on the
+// device (no localStorage, no cookie) — the app is reached over the internet
+// from any browser/phone, so every visit asks fresh via the profile gate.
+let activeProfile = null;
 let currentView    = 'swipe';
 let swipeIndex     = 0;
 let formSelections = {origin:null,type:null,duration:null};
@@ -516,12 +559,32 @@ window.changeServings = function(id, delta) {
   }
 };
 
-// ── LIKES ──
+// ── PROFILE ──
+window.setProfile = function(name) {
+  if (!PROFILES.includes(name)) return;
+  activeProfile = name;
+  document.getElementById('profile-gate').classList.add('closed');
+  updateProfileUI();
+  render();
+};
+function updateProfileUI() {
+  PROFILES.forEach(p => {
+    const btn = document.getElementById('profile-' + p);
+    if (btn) btn.classList.toggle('active', p === activeProfile);
+    if (btn) btn.classList.toggle('p-' + p, p === activeProfile);
+  });
+}
+
+// ── LIKES (per profile) ──
 async function saveLikes() {
-  try { await setDoc(doc(db,'likes','global'), {ids:[...likedIds]}); }
+  if (!activeProfile) return;
+  try { await setDoc(doc(db,'likes',activeProfile), {ids:[...likedIdsByProfile[activeProfile]]}); }
   catch(e) { console.warn('Could not save like', e); }
 }
-function isLiked(r) { return likedIds.has(r.id || r.firestoreId); }
+function isLiked(r) {
+  if (!activeProfile) return false;
+  return likedIdsByProfile[activeProfile].has(r.id || r.firestoreId);
+}
 
 function allRecipes() { return [...customRecipes, ...DEFAULT_RECIPES]; }
 
@@ -552,10 +615,15 @@ onSnapshot(q,
     render();
   }
 );
-onSnapshot(doc(db,'likes','global'),
-  snap => { likedIds = new Set(snap.exists() ? (snap.data().ids || []) : []); render(); },
-  err  => { console.warn('Could not load likes', err); }
-);
+// One listener per profile so switching profiles is instant and both
+// profiles' likes stay in sync live, even if the other person is liking
+// recipes on their own device at the same time.
+PROFILES.forEach(p => {
+  onSnapshot(doc(db,'likes',p),
+    snap => { likedIdsByProfile[p] = new Set(snap.exists() ? (snap.data().ids || []) : []); render(); },
+    err  => { console.warn('Could not load likes for ' + p, err); }
+  );
+});
 
 // ── PHOTO HANDLING ──
 window.handlePhotoSelect = function(input) {
@@ -777,13 +845,14 @@ function setupDrag(card) {
 }
 
 window.swipeCard = function(dir) {
+  if (!activeProfile) return;
   const filtered = getFiltered(true);
   if (swipeIndex >= filtered.length) return;
   const topCard = document.querySelector('#swipe-stack .swipe-card:last-child');
   if (!topCard) return;
   const r = filtered[swipeIndex];
   const rid = r.id || r.firestoreId;
-  if (dir==='right') likedIds.add(rid); else likedIds.delete(rid);
+  if (dir==='right') likedIdsByProfile[activeProfile].add(rid); else likedIdsByProfile[activeProfile].delete(rid);
   saveLikes();
   topCard.classList.add(dir==='left'?'swiping-left':'swiping-right');
   setTimeout(()=>{ swipeIndex++; render(); }, 380);
@@ -1076,6 +1145,7 @@ window.closeEditModalOverlay=function(e){
 addIngredientRow();
 addStepRow();
 buildFilters();
+updateProfileUI();
 </script>
 </body>
 </html>
